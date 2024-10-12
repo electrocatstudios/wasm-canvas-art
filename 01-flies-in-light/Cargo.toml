@@ -5,14 +5,16 @@ edition = "2021"
 
 [dependencies]
 gloo-console = "0.3.0"
+instant = { version = "0.1.13", features = [ "wasm-bindgen", "inaccurate" ] }
 js-sys = "0.3.67"
+rand = "0.8.5"
 wasm-bindgen = "0.2.92"
 yew = { version="0.21.0", features = ["csr"] }
 yew-router = "0.18.0"
 
 
 [dependencies.web-sys]
-version = "0.3.71"
+version = "0.3.72"
 features = [
   "Navigator",
   "Request",
@@ -20,8 +22,8 @@ features = [
   "RequestMode",
   "Response",
   "Window",
-  "CanvasRenderingContext2d",
   "CanvasGradient",
+  "CanvasRenderingContext2d",
   "HtmlCanvasElement",
   "HtmlImageElement",
   "ImageData",

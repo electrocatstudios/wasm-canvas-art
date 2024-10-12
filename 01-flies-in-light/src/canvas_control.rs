@@ -2,14 +2,19 @@ use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
 use yew::prelude::*;
 use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::window;
-use gloo_console::log;
+// use gloo_console::log;
 
-use crate::{light::Light, utils::{Color, Point}};
+use crate::{fly::Fly, light::Light, utils::{Color, Point}};
 
 pub struct CanvasControl {
     callback: Closure<dyn FnMut()>,
     canvas: NodeRef,
-    light: Light
+    light: Light,
+    flies: Vec::<Fly>,
+    last_update: f64,
+    height: f64,
+    _width: f64,
+    button_width: f64
 }
 
 pub enum CanvasControlMsg {
@@ -27,6 +32,11 @@ pub enum CanvasControlMsg {
 #[derive(Clone, Debug, PartialEq, Eq, Properties)]
 pub struct CanvasControlProps;
 
+const NUMBER_FLIES: u16 = 20;
+const BUTTON_HEIGHT: f64 = 100.0;
+const BUTTON_WIDTH_PERC: f64 = 0.25;
+
+
 impl Component for CanvasControl {
     type Message = CanvasControlMsg;
     type Properties = CanvasControlProps;
@@ -42,36 +52,48 @@ impl Component for CanvasControl {
         let width = window().unwrap().inner_width().unwrap().as_f64().unwrap();
         let height = window().unwrap().inner_height().unwrap().as_f64().unwrap();
         // log!(width, height);
-
+        let mut flies = Vec::<Fly>::new();
+        for _ in 0..NUMBER_FLIES {
+            flies.push(Fly::new(
+                Point::new(width/2.0, height/2.0)
+            ));
+        }       
+        
         CanvasControl{
             callback: callback,
             canvas: NodeRef::default(),
-            light: Light::new(Point::new(width / 2.0, height / 2.0), Color::new(155, 255, 155))
+            light: Light::new(Point::new(width / 2.0, height / 2.0), Color::new(255, 255, 155)),
+            flies: flies,
+            last_update: instant::now(),
+            height: height,
+            _width: width,
+            button_width: width * BUTTON_WIDTH_PERC
         }
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool{
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool{
         match msg {
             CanvasControlMsg::MouseDown(evt) => {
-                
+                self.handle_button_clicks(evt.0, evt.1);
                 true
             },
             CanvasControlMsg::MouseUp(_evt) => {
                 true
             },
-            CanvasControlMsg::MouseMove(evt) => {
+            CanvasControlMsg::MouseMove(_evt) => {
                 // log!("Event here => ", self.mousehandler.offset_x, self.mousehandler.offset_y);
                 true
             },
             CanvasControlMsg::TouchStart(evt) => {
                 // log!("Event here TouchStart => ", evt.0, evt.1);
+                self.handle_button_clicks(evt.0, evt.1);
                 true
             },
             CanvasControlMsg::TouchEnd(_evt) => {
                 // log!("Event here TouchEnd => ", evt.0, evt.1);
                 true
             },
-            CanvasControlMsg::TouchMove(evt) => {
+            CanvasControlMsg::TouchMove(_evt) => {
                 // log!("Event here TouchMove => ", evt.0, evt.1);
                 true
             },
@@ -134,8 +156,39 @@ impl Component for CanvasControl {
 }
 
 impl CanvasControl {
+    fn handle_button_clicks(&mut self, x: f64, y: f64) {
+        if y > self.height - BUTTON_HEIGHT {
+            if x < self.button_width {
+                self.light.set_color(Color::new(255, 255, 155));
+            } else if x <  self.button_width * 2.0 {
+                // Red
+                self.light.set_color(Color::new(242, 187, 201));
+            } else if x <  self.button_width * 3.0 {
+                // Green
+                self.light.set_color(Color::new(183, 237, 173));                        
+            } else if x <  self.button_width * 4.0 {
+                // Blue
+                self.light.set_color(Color::new(184, 195, 242));
+            }
+        }
+    }
+
     fn canvas_update(&mut self) {
-        self.light.update();
+        let now = instant::now();
+        
+        if self.last_update >= now {
+            
+            return;
+        }
+        let diff = now - self.last_update;
+
+        let delta = diff as f64 / 1000.0;
+        self.light.update(delta);
+        for fly in self.flies.iter_mut(){
+            fly.update(delta);
+        }
+
+        self.last_update += diff;
     }
 
     fn render(&mut self) {
@@ -157,11 +210,38 @@ impl CanvasControl {
         let mut ctx: CanvasRenderingContext2d =
             canvas.get_context("2d").unwrap().unwrap().unchecked_into();
 
-        ctx.set_fill_style_str("rgb(55, 155, 55)");
+        ctx.set_fill_style_str("rgb(15, 15, 25)");
         ctx.fill_rect(0.0, 0.0, width, height);
         ctx.stroke();
 
+        for fly in self.flies.iter_mut() {
+            fly.render(&mut ctx);
+        }
+
         self.light.render(&mut ctx);
+
+        // Draw buttons
+        ctx.set_fill_style_str("rgb(255, 255, 155)");
+        let start_pos = self.height - BUTTON_HEIGHT;
+        ctx.fill_rect(0.0, start_pos,  self.button_width, BUTTON_HEIGHT);
+
+        ctx.set_fill_style_str("rgb(242, 187, 201)");
+        ctx.fill_rect( self.button_width, start_pos,  self.button_width, BUTTON_HEIGHT);
+
+        ctx.set_fill_style_str("rgb(183, 237, 173)");
+        ctx.fill_rect( self.button_width * 2.0, start_pos,  self.button_width, BUTTON_HEIGHT);
+        
+        ctx.set_fill_style_str("rgb(184, 195, 242)");
+        ctx.fill_rect( self.button_width * 3.0, start_pos,  self.button_width, BUTTON_HEIGHT);
+        
+    //     // Red
+    //     self.light.set_color(Color::new(242, 187, 201));
+    // } else if evt.0 < BUTTON_WIDTH * 3.0 {
+    //     // Green
+    //     self.light.set_color(Color::new(183, 237, 173));                        
+    // } else if evt.0 < BUTTON_WIDTH * 4.0 {
+    //     // Blue
+    //     self.light.set_color(Color::new(184, 195, 242));
 
         window()
             .unwrap()
