@@ -12,7 +12,7 @@ yew-router = "0.18.0"
 
 
 [dependencies.web-sys]
-version = "0.3.58"
+version = "0.3.71"
 features = [
   "Navigator",
   "Request",
@@ -21,6 +21,7 @@ features = [
   "Response",
   "Window",
   "CanvasRenderingContext2d",
+  "CanvasGradient",
   "HtmlCanvasElement",
   "HtmlImageElement",
   "ImageData",

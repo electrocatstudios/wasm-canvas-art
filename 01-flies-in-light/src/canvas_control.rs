@@ -4,9 +4,12 @@ use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::window;
 use gloo_console::log;
 
+use crate::{light::Light, utils::{Color, Point}};
+
 pub struct CanvasControl {
     callback: Closure<dyn FnMut()>,
     canvas: NodeRef,
+    light: Light
 }
 
 pub enum CanvasControlMsg {
@@ -29,15 +32,21 @@ impl Component for CanvasControl {
     type Properties = CanvasControlProps;
 
     fn create(ctx: &Context<Self>) -> Self {
+        // log!("HGello world");
         let comp_ctx = ctx.link().clone();
         let callback =
             Closure::wrap(Box::new(move || comp_ctx.send_message(CanvasControlMsg::Render)) as Box<dyn FnMut()>);
 
         ctx.link().send_message(CanvasControlMsg::Render);
 
+        let width = window().unwrap().inner_width().unwrap().as_f64().unwrap();
+        let height = window().unwrap().inner_height().unwrap().as_f64().unwrap();
+        // log!(width, height);
+
         CanvasControl{
             callback: callback,
             canvas: NodeRef::default(),
+            light: Light::new(Point::new(width / 2.0, height / 2.0), Color::new(155, 255, 155))
         }
     }
 
@@ -67,6 +76,7 @@ impl Component for CanvasControl {
                 true
             },
             CanvasControlMsg::Render => {
+                // log!("Render");
                 self.render();
                 true
             },
@@ -124,11 +134,21 @@ impl Component for CanvasControl {
 }
 
 impl CanvasControl {
+    fn canvas_update(&mut self) {
+        self.light.update();
+    }
+
     fn render(&mut self) {
+        self.canvas_update();
+
         let canvas: HtmlCanvasElement = self.canvas.cast().unwrap();
         
         let width = canvas.client_width() as f64;
         let height = canvas.client_height() as f64;
+        
+        // let width = window().unwrap().inner_width().unwrap().as_f64().unwrap();
+        // let height = window().unwrap().inner_height().unwrap().as_f64().unwrap();
+        // log!(width, height);
 
         // Make sure the we reset the draw surface to prevent stretching
         canvas.set_width(width as u32);
@@ -137,8 +157,11 @@ impl CanvasControl {
         let mut ctx: CanvasRenderingContext2d =
             canvas.get_context("2d").unwrap().unwrap().unchecked_into();
 
-        ctx.set_fill_style(&JsValue::from("rgb(55, 55, 55)"));
+        ctx.set_fill_style_str("rgb(55, 155, 55)");
         ctx.fill_rect(0.0, 0.0, width, height);
+        ctx.stroke();
+
+        self.light.render(&mut ctx);
 
         window()
             .unwrap()

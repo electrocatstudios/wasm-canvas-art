@@ -2,7 +2,10 @@ use yew::prelude::*;
 use yew_router::prelude::*;
 
 mod canvas_control;
+mod fly;
+mod light;
 
+mod utils;
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {
