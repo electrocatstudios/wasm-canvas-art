@@ -4,7 +4,7 @@ use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::window;
 use gloo_console::log;
 
-use crate::{particle::Particle, utils::{Color, Point}};
+use crate::{particle::Particle, utils::Point};
 
 pub struct CanvasControl {
     callback: Closure<dyn FnMut()>,
@@ -12,7 +12,8 @@ pub struct CanvasControl {
     last_update: f64,
     height: f64,
     _width: f64,
-    particles: Vec::<Particle>
+    particles: Vec::<Particle>,
+    touch_started: bool
 }
 
 pub enum CanvasControlMsg {
@@ -49,8 +50,9 @@ impl Component for CanvasControl {
         // log!(width, height);
 
         let mut particles = Vec::<Particle>::new();
-        particles.push(Particle::new(width, height));
-        particles.push(Particle::new(width, height));
+        for _ in 0..NUMBER_PARTICLES {
+            particles.push(Particle::new(width, height));
+        }
 
         CanvasControl{
             callback: callback,
@@ -58,7 +60,8 @@ impl Component for CanvasControl {
             last_update: instant::now(),
             height: height,
             _width: width,
-            particles: particles
+            particles: particles,
+            touch_started: false
         }
     }
 
@@ -66,26 +69,53 @@ impl Component for CanvasControl {
         match msg {
             CanvasControlMsg::MouseDown(evt) => {
                 // self.handle_button_clicks(evt.0, evt.1);
+                self.touch_started = true;
+                for mut p in self.particles.iter_mut() {
+                    p.set_dest_loc(Point::new(evt.0, evt.1));
+                }
                 true
             },
-            CanvasControlMsg::MouseUp(_evt) => {
+            CanvasControlMsg::MouseUp(evt) => {
+                self.touch_started = false;
+                for mut p in self.particles.iter_mut() {
+                    p.reset_loc();
+                }
                 true
             },
-            CanvasControlMsg::MouseMove(_evt) => {
+            CanvasControlMsg::MouseMove(evt) => {
                 // log!("Event here => ", self.mousehandler.offset_x, self.mousehandler.offset_y);
+                if self.touch_started {
+                    for mut p in self.particles.iter_mut() {
+                        p.set_dest_loc(Point::new(evt.0, evt.1));
+                    }
+                }
+                
                 true
             },
             CanvasControlMsg::TouchStart(evt) => {
                 // log!("Event here TouchStart => ", evt.0, evt.1);
                 // self.handle_button_clicks(evt.0, evt.1);
+                self.touch_started = true;
+                for mut p in self.particles.iter_mut() {
+                    p.set_dest_loc(Point::new(evt.0, evt.1));
+                }
                 true
             },
-            CanvasControlMsg::TouchEnd(_evt) => {
+            CanvasControlMsg::TouchEnd(evt) => {
                 // log!("Event here TouchEnd => ", evt.0, evt.1);
+                self.touch_started = false;
+                for mut p in self.particles.iter_mut() {
+                    p.reset_loc();
+                }
                 true
             },
-            CanvasControlMsg::TouchMove(_evt) => {
+            CanvasControlMsg::TouchMove(evt) => {
                 // log!("Event here TouchMove => ", evt.0, evt.1);
+                if self.touch_started {
+                    for mut p in self.particles.iter_mut() {
+                        p.set_dest_loc(Point::new(evt.0, evt.1));
+                    }
+                }
                 true
             },
             CanvasControlMsg::Render => {

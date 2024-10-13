@@ -7,7 +7,7 @@ mod utils;
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {
-    #[at("/particle-swarm")]
+    #[at("/scenes/particle-swarm")]
     Home,
 }
 
