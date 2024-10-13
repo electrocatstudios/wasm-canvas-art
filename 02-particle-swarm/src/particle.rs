@@ -5,7 +5,6 @@ use gloo_console::log;
 use crate::utils::{Color, Point, normalize_angle, get_angle_between_points,dist_between_points};
 
 pub struct Particle {
-    bounds: Point::<f64>,
     start_loc: Point::<f64>,
     dest_loc: Point::<f64>,
     speed: f64,
@@ -48,7 +47,6 @@ impl Particle {
         let speed = rng.gen_range(MIN_SPEED..MAX_SPEED);
 
         Particle {
-            bounds: Point::new(bound_x, bound_y),
             dest_loc: Point::new(loc_x as f64, loc_y as f64),
             loc: Point::new(loc_x as f64, loc_y as f64),
             start_loc: Point::new(loc_x as f64, loc_y as f64),
